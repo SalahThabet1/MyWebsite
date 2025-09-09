@@ -1,0 +1,270 @@
+---
+interface Props {
+  heading: string
+  subHeading?: string
+  buttons?: Array<{
+    text: string
+    theme?: 'success' | 'secondary' | 'primary'
+    href?: string
+    icon?: string
+  }>
+  badge?: {
+    text: string
+    theme?: string
+    rounded?: boolean
+  }
+  image?: {
+    src: string
+    alt: string
+    width: number
+    height: number
+  }
+  reverse?: boolean
+  className?: string
+}
+
+const {
+  heading,
+  subHeading,
+  buttons = [],
+  badge,
+  image,
+  reverse = false,
+  className = ''
+} = Astro.props
+
+const getButtonClass = (theme: string = 'primary') => {
+  const baseClass = 'inline-flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl'
+  
+  switch (theme) {
+    case 'success':
+      return `${baseClass} bg-green-600 hover:bg-green-700 text-white`
+    case 'secondary':
+      return `${baseClass} border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800`
+    default:
+      return `${baseClass} bg-blue-600 hover:bg-blue-700 text-white`
+  }
+}
+---
+
+<section class={`hero ${className} ${image?.src ? 'hero-flex' : ''} ${reverse ? 'hero-reverse' : ''}`}>
+  <div class="hero-container">
+    <!-- Content Side -->
+    <div class="hero-content">
+      {badge && (
+        <div class={`hero-badge ${badge.rounded ? 'rounded-full' : 'rounded-lg'} ${badge.theme === 'outline' ? 'border border-blue-200 bg-blue-50 dark:border-blue-700 dark:bg-blue-900/30' : 'bg-blue-100 dark:bg-blue-900/50'}`}>
+          <span class="text-blue-800 dark:text-blue-200 text-sm font-medium">
+            {badge.text}
+          </span>
+        </div>
+      )}
+      
+      <h1 class="hero-heading">{heading}</h1>
+      
+      {subHeading && (
+        <h2 class="hero-subheading">{subHeading}</h2>
+      )}
+      
+      {buttons.length > 0 && (
+        <div class="hero-buttons">
+          {buttons.map(button => (
+            <a 
+              href={button.href || '#'} 
+              class={getButtonClass(button.theme)}
+            >
+              {button.icon && (
+                <span class="mr-2">
+                  {button.icon === 'info' ? 'ℹ️' : ''}
+                </span>
+              )}
+              {button.text}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+    
+    <!-- Image Side -->
+    {image?.src && (
+      <div class="hero-image">
+        <div class="hero-image-container">
+          <img
+            src={image.src}
+            alt={image.alt}
+            width={image.width}
+            height={image.height}
+            class="hero-img"
+            loading="eager"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+          />
+          <!-- Fallback -->
+          <div class="hero-fallback" style="display: none;">
+            <span class="text-6xl">🚀</span>
+          </div>
+        </div>
+        
+        <!-- Decorative elements -->
+        <div class="hero-decoration hero-decoration-1"></div>
+        <div class="hero-decoration hero-decoration-2"></div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding: 2rem 0;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+  }
+  
+  .hero-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .hero-flex .hero-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: center;
+  }
+  
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    width: fit-content;
+  }
+  
+  .hero-heading {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1f2937;
+    margin: 0;
+  }
+  
+  :global(.dark) .hero-heading {
+    color: #f9fafb;
+  }
+  
+  .hero-subheading {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: #6b7280;
+    margin: 0;
+  }
+  
+  :global(.dark) .hero-subheading {
+    color: #d1d5db;
+  }
+  
+  .hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .hero-image {
+    display: flex;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .hero-image-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 2/1;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  
+  .hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .hero-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+  
+  .hero-decoration {
+    position: absolute;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  
+  .hero-decoration-1 {
+    top: -1rem;
+    right: -1rem;
+    width: 2rem;
+    height: 2rem;
+    background: #fbbf24;
+  }
+  
+  .hero-decoration-2 {
+    bottom: -1rem;
+    left: -1rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #10b981;
+    animation-delay: 300ms;
+  }
+  
+  /* Desktop styles */
+  @media (min-width: 1024px) {
+    .hero-flex .hero-container {
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+    }
+    
+    .hero-reverse .hero-container {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .hero-reverse .hero-content {
+      order: 2;
+    }
+    
+    .hero-reverse .hero-image {
+      order: 1;
+    }
+    
+    .hero-heading {
+      font-size: 3.75rem;
+    }
+    
+    .hero-subheading {
+      font-size: 1.5rem;
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+</style>
