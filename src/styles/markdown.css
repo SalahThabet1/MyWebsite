@@ -4,21 +4,23 @@
 
 /* Prose Complement */
 .prose {
-  --fg-light: #888;
-  --fg: #555;
-  --fg-deep: #222;
+  --fg-light: #928374;
+  --fg: #504945;
+  --fg-deep: #3c3836;
   --fg-deeper: var(--c-text);
 
   color: var(--fg);
 }
 
 .prose a {
-  border-bottom: 1px solid rgba(125, 125, 125, 0.3);
+  border-bottom: 1px solid #928374;
   transition: border 0.3s ease-in-out;
+  color: #458588;
 }
 
 .prose a:hover {
-  border-bottom: 1px solid var(--fg);
+  border-bottom: 1px solid #458588;
+  color: #83a598;
 }
 
 .prose a code {
@@ -31,9 +33,9 @@
 }
 
 html.dark .prose {
-  --fg-light: #888;
-  --fg: #bbb;
-  --fg-deep: #ddd;
+  --fg-light: #928374;
+  --fg: #a89984;
+  --fg-deep: #d5c4a1;
   --fg-deeper: var(--c-text);
 }
 
@@ -98,7 +100,7 @@ html.dark .prose {
 .prose code:not(.expressive-code code) {
   border-radius: 0.25rem;
   padding: 0.15rem 0.3rem;
-  --uno: 'bg-[#88888820] dark:bg-[#88888830]';
+  --uno: 'bg-[#d5c4a120] dark:bg-[#50494530]';
 }
 
 /* Toc */
