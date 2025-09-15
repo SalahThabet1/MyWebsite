@@ -9,7 +9,7 @@
   <div class="flex justify-center">
     <div class="w-full max-w-md">
       <img 
-        src="src\content\home\public\images\profile.png" 
+        src="public/images/profile.png" 
         alt="Banner"
         class="w-full h-auto rounded-lg shadow-xl"
         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
