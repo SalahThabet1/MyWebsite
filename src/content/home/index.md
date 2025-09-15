@@ -9,11 +9,13 @@
   <div class="flex justify-center">
     <div class="w-full max-w-md">
       <img 
-        src="public/images/profile.png" 
-        alt="Banner"
-        class="w-full h-auto rounded-lg shadow-xl"
-        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
-      />
+        src="/images/profile.png" 
+        alt="Profile photo"
+        width="480" 
+        height="480"
+        loading="eager"
+        decoding="async"
+        class="w-full h-auto rounded-lg shadow-xl select-none"/>
     </div>
   </div>
 </div>
