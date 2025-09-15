@@ -14,9 +14,6 @@
         class="w-full h-auto rounded-lg shadow-xl"
         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
       />
-      <div class="w-full h-64 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-6xl rounded-lg shadow-xl" style="display: none;">
-        🚀
-      </div>
     </div>
   </div>
 </div>
