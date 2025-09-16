@@ -15,7 +15,7 @@
         height="480"
         loading="eager"
         decoding="async"
-        class="w-full h-auto rounded-lg shadow-xl select-none"/>
+        class="w-full h-auto rounded-lg select-none"/>
     </div>
   </div>
 </div>

@@ -1,0 +1,20 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "git: add-commit-push-all-remotes",
+			"type": "shell",
+			"command": "pwsh",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"git status -sb; git add -A; try { git commit -m 'chore: update home content and background' --no-verify } catch { Write-Host 'No new commit'; }; $remotes = git remote; foreach ($r in $remotes) { git push $r HEAD }"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"group": "build"
+		}
+	]
+}

@@ -3,8 +3,9 @@
 ---
 
 <bg-dot
-  class="z--1 fixed top-0 bottom-0 left-0 right-0 pointer-events-none print:hidden opacity-90"
-  style="mix-blend-mode: multiply;"></bg-dot>
+  class="z--1 fixed top-0 bottom-0 left-0 right-0 pointer-events-none print:hidden opacity-100 dark:invert mix-blend-multiply dark:mix-blend-screen"
+>
+</bg-dot>
 
 <script>
   import p5 from 'p5'
@@ -19,61 +20,17 @@
     }
 
     connectedCallback() {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
-      const isDarkClass = () =>
-        document.documentElement.classList.contains('dark')
-      const isDark = () => isDarkClass() || prefersDark.matches
-
-      const setBlendMode = () => {
-        // Light mode => multiply, Dark mode => screen
-        this.style.mixBlendMode = isDark() ? 'screen' : 'multiply'
-      }
-      setBlendMode()
-      prefersDark.addEventListener('change', setBlendMode)
-      const mutationObserver = new MutationObserver(() => setBlendMode())
-      mutationObserver.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class'],
-      })
-
       const sketch = (p: P5Instance) => {
+        const BACKGROUND = '#fff'
         const SCALE = 200
         const LENGTH = 10
         const SPACING = 15
-        const TRAIL_FADE = 12 // larger = faster fade
 
         const width = window.innerWidth
         const height = window.innerHeight
 
-        const existingPoints = new Set<string>()
+        const existingPoints = new Set()
         const points: { x: number; y: number; opacity: number }[] = []
-
-        function getBgRGB(): [number, number, number] {
-          const bg =
-            getComputedStyle(document.documentElement)
-              .getPropertyValue('--c-bg')
-              .trim() || '#ffffff'
-          // convert possible hsl(...) or rgb(...)
-          const ctx = document.createElement('canvas').getContext('2d')!
-          ctx.fillStyle = bg
-          const computed = ctx.fillStyle // forces normalization
-          // computed will be rgb(r, g, b)
-          const m = /rgb[a]?\((\d+), ?(\d+), ?(\d+)/.exec(computed)
-          if (m) return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])]
-          return [255, 255, 255]
-        }
-
-        let [br, bgc, bb] = getBgRGB()
-        let lastBgRefresh = performance.now()
-
-        function refreshBgIfNeeded() {
-          const now = performance.now()
-          // refresh every ~3s or on dark change
-          if (now - lastBgRefresh > 3000) {
-            ;[br, bgc, bb] = getBgRGB()
-            lastBgRefresh = now
-          }
-        }
 
         function getForceOnPoint(x: number, y: number, z: number) {
           return (p.noise(x / SCALE, y / SCALE, z) - 0.5) * 2 * p.TWO_PI
@@ -96,33 +53,27 @@
 
         p.setup = () => {
           p.createCanvas(width, height)
-          p.clear() // start transparent
+          p.background(BACKGROUND)
           p.frameRate(30)
           addPoints()
         }
 
         p.draw = () => {
-          refreshBgIfNeeded()
-          // fade previous frame toward background color to create trails
-          p.noStroke()
-          p.fill(br, bgc, bb, TRAIL_FADE)
-          p.rect(0, 0, width, height)
+          p.background(BACKGROUND)
 
-          const t = performance.now() / 10000
+          const t = +new Date() / 10000
           for (const point of points) {
             const { x, y } = point
             const rad = getForceOnPoint(x, y, t)
             const length = getLength(x, y, t)
             const nx = x + p.cos(rad) * length
             const ny = y + p.sin(rad) * length
-
-            // choose a neutral tone relative to bg luminance
-            const lum = (0.2126 * br + 0.7152 * bgc + 0.0722 * bb) / 255
-            const tone = lum > 0.5 ? 40 : 220 // dark dots on light bg, light dots on dark bg
-            const alpha =
-              (Math.abs(p.cos(rad)) * 0.7 + 0.3) * point.opacity * 255
-
-            p.stroke(tone, tone, tone, alpha)
+            p.stroke(
+              200,
+              200,
+              200,
+              (Math.abs(p.cos(rad)) * 0.8 + 0.2) * point.opacity * 255
+            )
             p.strokeWeight(2)
             p.point(nx, ny)
           }
@@ -130,12 +81,6 @@
       }
 
       this.p5Instance = new p5(sketch, this)
-
-      // store cleanup handles
-      ;(this as any)._cleanup = () => {
-        prefersDark.removeEventListener('change', setBlendMode)
-        mutationObserver.disconnect()
-      }
     }
 
     // after switching pages, stop the animation loop
@@ -144,7 +89,6 @@
         this.p5Instance.remove()
         this.p5Instance = null
       }
-      if ((this as any)._cleanup) (this as any)._cleanup()
     }
   }
 
