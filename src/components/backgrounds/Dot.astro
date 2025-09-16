@@ -3,9 +3,9 @@
 ---
 
 <bg-dot
-  class="z--1 fixed top-0 bottom-0 left-0 right-0 pointer-events-none print:hidden dark:invert"
->
-</bg-dot>
+  class="z--1 fixed inset-0 pointer-events-none print:hidden"
+  style="mix-blend-mode:screen"
+></bg-dot>
 
 <script>
   import p5 from 'p5'
@@ -21,10 +21,11 @@
 
     connectedCallback() {
       const sketch = (p: P5Instance) => {
-        const BACKGROUND = '#fff'
+        // Dynamic, theme-aware point field.
         const SCALE = 200
         const LENGTH = 10
         const SPACING = 15
+        const FADE_ALPHA = 16 // background trail alpha (0-255)
 
         const width = window.innerWidth
         const height = window.innerHeight
@@ -51,29 +52,59 @@
           }
         }
 
+        const host = this as HTMLElement
+        const getBgColor = () => {
+          const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue('--c-bg')
+            .trim() || '#ffffff'
+          const hex = raw.startsWith('#') ? raw.slice(1) : raw
+          const full = hex.length === 3 ? hex.split('').map(c=>c+c).join('') : hex
+          return {
+            r: parseInt(full.slice(0,2),16),
+            g: parseInt(full.slice(2,4),16),
+            b: parseInt(full.slice(4,6),16),
+          }
+        }
+        let bg = getBgColor()
+        const lum = (c: {r:number;g:number;b:number}) => (0.2126*c.r + 0.7152*c.g + 0.0722*c.b)/255
+        const isDark = () => lum(bg) < 0.5
+
+        const updateBlend = () => {
+          host.style.mixBlendMode = isDark() ? 'screen' : 'multiply'
+        }
+        setInterval(() => { bg = getBgColor(); updateBlend() }, 2500)
+        updateBlend()
+
         p.setup = () => {
           p.createCanvas(width, height)
-          p.background(BACKGROUND)
           p.frameRate(30)
           addPoints()
         }
 
         p.draw = () => {
-          p.background(BACKGROUND)
+          // Soft trail fade using theme background color.
+          p.noStroke()
+          p.fill(bg.r, bg.g, bg.b, FADE_ALPHA)
+          p.rect(0,0,width,height)
 
-          const t = +new Date() / 10000
+          const t = Date.now() / 10000
+          const dark = isDark()
           for (const point of points) {
             const { x, y } = point
             const rad = getForceOnPoint(x, y, t)
             const length = getLength(x, y, t)
             const nx = x + p.cos(rad) * length
             const ny = y + p.sin(rad) * length
-            p.stroke(
-              200,
-              200,
-              200,
-              (Math.abs(p.cos(rad)) * 0.8 + 0.2) * point.opacity * 255
-            )
+            const variance = (Math.abs(p.cos(rad)) * 0.6 + 0.4) * point.opacity
+            const tone = dark ? 235 : 55
+            const alphaCore = variance * (dark ? 180 : 210)
+            const alphaGlow = alphaCore * 0.35
+            // Glow
+            p.stroke(tone, tone, tone, alphaGlow)
+            p.strokeWeight(5)
+            p.point(nx, ny)
+            // Core
+            p.stroke(tone, tone, tone, alphaCore)
             p.strokeWeight(2)
             p.point(nx, ny)
           }
