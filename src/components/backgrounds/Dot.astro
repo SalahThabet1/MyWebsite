@@ -3,9 +3,8 @@
 ---
 
 <bg-dot
-  class="z--1 fixed inset-0 pointer-events-none print:hidden"
-  style="mix-blend-mode:screen"
-></bg-dot>
+  class="z--1 fixed top-0 bottom-0 left-0 right-0 pointer-events-none print:hidden opacity-90"
+  style="mix-blend-mode: multiply;"></bg-dot>
 
 <script>
   import p5 from 'p5'
@@ -20,18 +19,61 @@
     }
 
     connectedCallback() {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)')
+      const isDarkClass = () =>
+        document.documentElement.classList.contains('dark')
+      const isDark = () => isDarkClass() || prefersDark.matches
+
+      const setBlendMode = () => {
+        // Light mode => multiply, Dark mode => screen
+        this.style.mixBlendMode = isDark() ? 'screen' : 'multiply'
+      }
+      setBlendMode()
+      prefersDark.addEventListener('change', setBlendMode)
+      const mutationObserver = new MutationObserver(() => setBlendMode())
+      mutationObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class'],
+      })
+
       const sketch = (p: P5Instance) => {
-        // Dynamic, theme-aware point field.
         const SCALE = 200
         const LENGTH = 10
         const SPACING = 15
-        const FADE_ALPHA = 16 // background trail alpha (0-255)
+        const TRAIL_FADE = 12 // larger = faster fade
 
         const width = window.innerWidth
         const height = window.innerHeight
 
-        const existingPoints = new Set()
+        const existingPoints = new Set<string>()
         const points: { x: number; y: number; opacity: number }[] = []
+
+        function getBgRGB(): [number, number, number] {
+          const bg =
+            getComputedStyle(document.documentElement)
+              .getPropertyValue('--c-bg')
+              .trim() || '#ffffff'
+          // convert possible hsl(...) or rgb(...)
+          const ctx = document.createElement('canvas').getContext('2d')!
+          ctx.fillStyle = bg
+          const computed = ctx.fillStyle // forces normalization
+          // computed will be rgb(r, g, b)
+          const m = /rgb[a]?\((\d+), ?(\d+), ?(\d+)/.exec(computed)
+          if (m) return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])]
+          return [255, 255, 255]
+        }
+
+        let [br, bgc, bb] = getBgRGB()
+        let lastBgRefresh = performance.now()
+
+        function refreshBgIfNeeded() {
+          const now = performance.now()
+          // refresh every ~3s or on dark change
+          if (now - lastBgRefresh > 3000) {
+            ;[br, bgc, bb] = getBgRGB()
+            lastBgRefresh = now
+          }
+        }
 
         function getForceOnPoint(x: number, y: number, z: number) {
           return (p.noise(x / SCALE, y / SCALE, z) - 0.5) * 2 * p.TWO_PI
@@ -52,59 +94,35 @@
           }
         }
 
-        const host = this as HTMLElement
-        const getBgColor = () => {
-          const raw = getComputedStyle(document.documentElement)
-            .getPropertyValue('--c-bg')
-            .trim() || '#ffffff'
-          const hex = raw.startsWith('#') ? raw.slice(1) : raw
-          const full = hex.length === 3 ? hex.split('').map(c=>c+c).join('') : hex
-          return {
-            r: parseInt(full.slice(0,2),16),
-            g: parseInt(full.slice(2,4),16),
-            b: parseInt(full.slice(4,6),16),
-          }
-        }
-        let bg = getBgColor()
-        const lum = (c: {r:number;g:number;b:number}) => (0.2126*c.r + 0.7152*c.g + 0.0722*c.b)/255
-        const isDark = () => lum(bg) < 0.5
-
-        const updateBlend = () => {
-          host.style.mixBlendMode = isDark() ? 'screen' : 'multiply'
-        }
-        setInterval(() => { bg = getBgColor(); updateBlend() }, 2500)
-        updateBlend()
-
         p.setup = () => {
           p.createCanvas(width, height)
+          p.clear() // start transparent
           p.frameRate(30)
           addPoints()
         }
 
         p.draw = () => {
-          // Soft trail fade using theme background color.
+          refreshBgIfNeeded()
+          // fade previous frame toward background color to create trails
           p.noStroke()
-          p.fill(bg.r, bg.g, bg.b, FADE_ALPHA)
-          p.rect(0,0,width,height)
+          p.fill(br, bgc, bb, TRAIL_FADE)
+          p.rect(0, 0, width, height)
 
-          const t = Date.now() / 10000
-          const dark = isDark()
+          const t = performance.now() / 10000
           for (const point of points) {
             const { x, y } = point
             const rad = getForceOnPoint(x, y, t)
             const length = getLength(x, y, t)
             const nx = x + p.cos(rad) * length
             const ny = y + p.sin(rad) * length
-            const variance = (Math.abs(p.cos(rad)) * 0.6 + 0.4) * point.opacity
-            const tone = dark ? 235 : 55
-            const alphaCore = variance * (dark ? 180 : 210)
-            const alphaGlow = alphaCore * 0.35
-            // Glow
-            p.stroke(tone, tone, tone, alphaGlow)
-            p.strokeWeight(5)
-            p.point(nx, ny)
-            // Core
-            p.stroke(tone, tone, tone, alphaCore)
+
+            // choose a neutral tone relative to bg luminance
+            const lum = (0.2126 * br + 0.7152 * bgc + 0.0722 * bb) / 255
+            const tone = lum > 0.5 ? 40 : 220 // dark dots on light bg, light dots on dark bg
+            const alpha =
+              (Math.abs(p.cos(rad)) * 0.7 + 0.3) * point.opacity * 255
+
+            p.stroke(tone, tone, tone, alpha)
             p.strokeWeight(2)
             p.point(nx, ny)
           }
@@ -112,6 +130,12 @@
       }
 
       this.p5Instance = new p5(sketch, this)
+
+      // store cleanup handles
+      ;(this as any)._cleanup = () => {
+        prefersDark.removeEventListener('change', setBlendMode)
+        mutationObserver.disconnect()
+      }
     }
 
     // after switching pages, stop the animation loop
@@ -120,6 +144,7 @@
         this.p5Instance.remove()
         this.p5Instance = null
       }
+      if ((this as any)._cleanup) (this as any)._cleanup()
     }
   }
 
